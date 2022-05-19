@@ -1,0 +1,44 @@
+services:
+  php:
+    image: tugboatqa/php:7.4-apache
+    default: true
+    depends: mariadb
+    commands:
+      init:
+        # Configure PHP settings.
+        - cp $TUGBOAT_ROOT/.tugboat/php.ini /usr/local/etc/php/conf.d/backdrop-php.ini
+        # Enable Apache 'rewrite' module for clean URLs.
+        - a2enmod rewrite expires headers
+        # Download Backdrop core.
+        - cd $TUGBOAT_ROOT && wget https://github.com/backdrop/backdrop/archive/refs/heads/1.x.zip
+        - cd $TUGBOAT_ROOT && unzip 1.x.zip && rm 1.x.zip
+        # Link the document root to the expected path.
+        - ln -snf $TUGBOAT_ROOT/backdrop-1.x $DOCROOT
+        # Use the Tugboat-specific Backdrop settings.
+        - cp $TUGBOAT_ROOT/.tugboat/settings.local.php $TUGBOAT_ROOT/backdrop-1.x/settings.local.php
+        # Generate a unique hash_salt to secure the site.
+        - echo "\$settings['hash_salt'] = '$(openssl rand -hex 32)';" >> $TUGBOAT_ROOT/backdrop-1.x/settings.local.php
+        # Create the config directories.
+        - mkdir -p $TUGBOAT_ROOT/backdrop-1.x/files/config/active
+        - mkdir -p $TUGBOAT_ROOT/backdrop-1.x/files/config/staging
+        # Set appropriate file permissions/ownership.
+        - chown -R www-data:www-data $TUGBOAT_ROOT/backdrop-1.x
+        - find $TUGBOAT_ROOT/backdrop-1.x/files -type d -exec chmod 2775 {} \;
+        - find $TUGBOAT_ROOT/backdrop-1.x/files -type f -exec chmod 0664 {} \;
+      update:
+        # Clear out active config (needed when rebuilding/reinstalling).
+        - find $TUGBOAT_ROOT/backdrop-1.x/files/config/active -mindepth 1 -delete
+        # Install Backdrop.
+        - cd $TUGBOAT_ROOT/backdrop-1.x && php ./core/scripts/install.sh --db-url=mysql://tugboat:tugboat@mariadb/tugboat --account-pass=ThisIsADevSite
+        # Fix config permissions after install.
+        - chown -R www-data:www-data $TUGBOAT_ROOT/backdrop-1.x/files/config/active
+        - find $TUGBOAT_ROOT/backdrop-1.x/files/config/active -type f -exec chmod 0664 {} \;
+  mariadb:
+    image: tugboatqa/mariadb:10.7
+    commands:
+      init:
+        # Configure database for UTF-8: https://api.backdropcms.org/database-configuration#utf8mb4
+        - echo "[mysqld]\ninnodb_large_prefix=true\ninnodb_file_format=barracuda\ninnodb_file_per_table=true" >> /etc/mysql/conf.d/utf8mb.conf
+      update:
+        # Drop and re-create the database (needed when rebuilding/reinstalling).
+        - mysqladmin -f drop tugboat && mysqladmin create tugboat
