@@ -9,9 +9,11 @@ services:
         - cp $TUGBOAT_ROOT/.tugboat/php.ini /usr/local/etc/php/conf.d/backdrop-php.ini
         # Enable Apache 'rewrite' module for clean URLs.
         - a2enmod rewrite expires headers
+      update:
         # Download Backdrop core.
         - cd $TUGBOAT_ROOT && wget https://github.com/backdrop/backdrop/archive/refs/heads/1.x.zip
         - cd $TUGBOAT_ROOT && unzip 1.x.zip && rm 1.x.zip
+        - echo "test123" >> $TUGBOAT_ROOT/backdrop-1.x/files/test.txt
         # Link the document root to the expected path.
         - ln -snf $TUGBOAT_ROOT/backdrop-1.x $DOCROOT
         # Use the Tugboat-specific Backdrop settings.
@@ -25,7 +27,6 @@ services:
         - chown -R www-data:www-data $TUGBOAT_ROOT/backdrop-1.x
         - find $TUGBOAT_ROOT/backdrop-1.x/files -type d -exec chmod 2775 {} \;
         - find $TUGBOAT_ROOT/backdrop-1.x/files -type f -exec chmod 0664 {} \;
-      update:
         # Clear out active config (needed when rebuilding/reinstalling).
         - find $TUGBOAT_ROOT/backdrop-1.x/files/config/active -mindepth 1 -delete
         # Install Backdrop.
