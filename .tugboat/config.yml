@@ -15,7 +15,6 @@ services:
         # Download Backdrop core.
         - cd $TUGBOAT_ROOT && wget https://github.com/backdrop/backdrop/archive/refs/heads/1.x.zip
         - cd $TUGBOAT_ROOT && unzip 1.x.zip && rm 1.x.zip
-        - echo "test987" >> $TUGBOAT_ROOT/backdrop-1.x/files/test.txt
         # Link the document root to the expected path.
         - ln -snf $TUGBOAT_ROOT/backdrop-1.x $DOCROOT
         # Use the Tugboat-specific Backdrop settings.
