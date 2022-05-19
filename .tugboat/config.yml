@@ -6,10 +6,12 @@ services:
     commands:
       init:
         # Configure PHP settings.
-        - cp $TUGBOAT_ROOT/.tugboat/php.ini /usr/local/etc/php/conf.d/backdrop-php.ini
+        - cp -f $TUGBOAT_ROOT/.tugboat/php.ini /usr/local/etc/php/conf.d/backdrop-php.ini
         # Enable Apache 'rewrite' module for clean URLs.
         - a2enmod rewrite expires headers
       update:
+        # Delete existing directory.
+        - rm -rf $TUGBOAT_ROOT/backdrop-1.x
         # Download Backdrop core.
         - cd $TUGBOAT_ROOT && wget https://github.com/backdrop/backdrop/archive/refs/heads/1.x.zip
         - cd $TUGBOAT_ROOT && unzip 1.x.zip && rm 1.x.zip
@@ -17,7 +19,7 @@ services:
         # Link the document root to the expected path.
         - ln -snf $TUGBOAT_ROOT/backdrop-1.x $DOCROOT
         # Use the Tugboat-specific Backdrop settings.
-        - cp $TUGBOAT_ROOT/.tugboat/settings.local.php $TUGBOAT_ROOT/backdrop-1.x/settings.local.php
+        - cp -f $TUGBOAT_ROOT/.tugboat/settings.local.php $TUGBOAT_ROOT/backdrop-1.x/settings.local.php
         # Generate a unique hash_salt to secure the site.
         - echo "\$settings['hash_salt'] = '$(openssl rand -hex 32)';" >> $TUGBOAT_ROOT/backdrop-1.x/settings.local.php
         # Create the config directories.
